@@ -1,0 +1,194 @@
+#!/bin/sh
+
+# variables
+## options #####################################################
+TARGETDIR=''                                            # Unprocessed directory
+EXPORTDIR=''                                            # Directory to export processed $TARGETDIR
+PUBDIR='pub'                                            # Directory containing stylesheet, favicon... just anything making processed $TARGETDIR look stylish
+    PAGESTYLESHEET="$PUBDIR/style/style.css"            # The stylesheet
+    PAGEFAVICON="$PUBDIR/favicon.ico"                   # The favicon
+
+INDEXFN='index'                                         # Make script use other names to act as 'index' pages
+TARGETMARKUPFILEFORMAT='md'                             # Which file extension should be seen as markup file by this script
+
+MARKUPPROCESSINGPROGRAM='pandoc -f markdown -t html '   # Program to process markup files. 
+
+### switches                                            # Options must be written either 'true' or 'false'
+OVERWRITEEXPORT='false'                                 # Automatically wipe $EXPORTDIR if it exists
+INCEMPTYDIRS='true'                                     # In navigation bar, include empty directories but as unclickable items. Might serve useful to some
+INCALLFILES='false'                                      # Include not just processed markup files in navigation bar, but all files in navigaiton bar that are clickable
+INCINDEXINHREF='true'                                   # If the http server in host system for some reason do not automatically open 'index.html' type files, include 'index.html' type in nagivation bar item's leading url
+# RELPATHALLPATHS='true' pain in the ass for me to set this up (relative paths instead absolute in hrefs of <a>), so maybe you a shell scripter implement this yourself or i might do it some time later
+
+## internal script vars ########################################
+indexfile="$INDEXFN.$TARGETMARKUPFILEFORMAT"
+TMPFILEFORprocessintopage='/tmp/wesh'
+
+# script sequence
+die() {
+    err="$1"; shift
+    for i in "$@"; do
+        printf "$i\n"
+    done
+    exit "$err"
+}
+
+rootname() {
+    printf "$1" | cut -d '/' -f1
+}
+
+extname() {
+    printf "$1" | sed 's/.*\.//'
+}
+
+makerelpath() {
+    [ "$1" = "/" ] && return
+    printf "$1" | sed 's/\//\n/g' | while read i; do
+        printf "../"
+    done
+}
+
+escapeslashes() { # this for sed
+    printf "$1" | sed 's/\//\\\//g'
+}
+
+checkdircontents() {
+    [ -n "$(ls "$1")" ] && printf '1'
+}
+
+printnav() {
+    echo "<ul>"
+    find "$1" -maxdepth 1 | sort | while read i; do
+        iname="$(basename "$i")"
+        parentdirofdollar2="$(rootname "$2")"
+        isempty="$([ -d "$i" ] && checkdircontents "$i")"
+        
+        [ "$i" = "$1" ] \
+            || ( [ -d "$i" ] && [ -z "$isempty" ] && [ "$INCEMPTYDIRS" = 'false' ] ) \
+            || ( [ -f "$i" ] && [ "$iname" = "$indexfile" ] ) \
+            || ( [ -f "$i" ] && [ "$(extname "$iname")" != "$TARGETMARKUPFILEFORMAT" ] && [ "$INCALLFILES" = 'false' ] )  \
+            && continue
+
+        [ -f "$i" ] && [ "$(extname "$iname")" = "$TARGETMARKUPFILEFORMAT" ] && newiname="$(printf "$iname" | sed "s/\.$TARGETMARKUPFILEFORMAT/\.html/")" || newiname=
+
+        [ -d "$i" ] && [ -z "$isempty" ] || href="/$(printf "$i" | sed "s/$(escapeslashes "$TARGETDIR")//$([ -n "$newiname" ] && printf ";s/$iname/$newiname/")")$([ -d "$i" ] && [ "$INCINDEXINHREF" = 'true' ] && printf "/$INDEXFN.html")"
+
+        if [ "$iname" = "$parentdirofdollar2" ]; then
+            echo "<li class=\"listhighlight$([ -d "$i" ] && printf ' listdir')\"><a href=\"$href\">$(printf "$iname" | sed "s/\.$TARGETMARKUPFILEFORMAT//")</a></li>"
+            [ -d "$i" ] && printnav "$i" "$(printf "$2" | sed "s/$parentdirofdollar2\///")"
+        else
+            [ -d "$i" ] && [ -z "$isempty" ] \
+                && echo "<li>$iname</li>" \
+                || echo "<li $([ -d "$i" ] && printf 'class="listdir"')><a href=\"$href\">$(printf "$iname" | sed "s/\.$TARGETMARKUPFILEFORMAT//")</a></li>"
+        fi
+    done
+    echo "</ul>"
+}
+
+processpage() {
+    [ -z "$1" ] && pex="$2/$INDEXFN.html" || pex="$2/$(basename "$1" | sed -e "s/\.$TARGETMARKUPFILEFORMAT/.html/")"
+    cleanexportroot="$(escapeslashes "$EXPORTDIR")"
+    cleantargetroot="$(escapeslashes "$TARGETDIR")"
+    path2aim="$([ -z "$1" ] && printf "$2/" | sed "s/$cleanexportroot\///" || printf "$1" | sed "s/$cleantargetroot\///")"
+    rootpath="/$([ "$INCINDEXINHREF" = 'true' ] && printf "$INDEXFN.html")"
+    csspath="/$PAGESTYLESHEET"
+    ficonpath="/$PAGEFAVICON"
+
+    printf "\
+<html>
+    <head>
+        <meta charset=\"utf-8\">
+        <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">
+        <title>$([ -z "$1" ] && printf "Index of $(basename "$2")" || printf "$(basename "$1" | sed "s/.$TARGETMARKUPFILEFORMAT//")")</title>
+        $([ -n "$PAGESTYLESHEET" ] && printf "<link rel=\"stylesheet\" type=\"text/css\" href=\"$csspath\">")
+        $([ -n "$PAGEFAVICON" ] && printf "<link rel=\"icon\" type=\"image/x-icon\" href=\"$ficonpath\">")
+    </head>
+    <body>
+        <header>
+            <nav>
+                <a href=\"https://news.yocombinator.com\">hacker news</a>
+                <a href=\"#\">no link</a>
+                <a href=\"#\" class=\"floatright\">no link but its floating right</a>
+            </nav>
+            <h1><a href=\"$rootpath\">wesh</a><span>edit the structure of this page inside script!!!</span></h1>
+            
+        </header>
+        <nav>
+$(printnav "$TARGETDIR" "$path2aim")
+        </nav>
+        $( [ -n "$1" ] && printf "\
+        <article>
+$($MARKUPPROCESSINGPROGRAM "$1")
+        </article>
+")
+    <footer>
+        made with wesh
+    </footer>
+    </body>
+</html>" \
+    > "$pex"
+}
+
+processsite() {
+    find "$TARGETDIR" -type d -printf '%P\n' | while read d; do
+        echo "Processing $TARGETDIR/$d"
+
+        containsindex=
+        emptydir="$(checkdircontents "$TARGETDIR/$d")"
+        
+        [ "$INCEMPTYDIRS" = 'false' ] && [ -z "$emptydir" ] && continue
+        find "$TARGETDIR/$d" -type f -maxdepth 1 > "$TMPFILEFORprocessintopage"
+        mkdir -p "$EXPORTDIR/$d"
+        
+        while read f; do
+            fn="$(basename "$f")"
+            ff="$(extname "$fn")"
+
+            case "$ff" in
+                "$TARGETMARKUPFILEFORMAT") echo "-> Making page from $fn" ; processpage "$f" "$EXPORTDIR/$d" ;;
+                *) echo "-> Copying $fn" ; cp "$f" "$EXPORTDIR/$d";;
+            esac
+
+            [ "$fn" = "$indexfile" ] && containsindex='1'
+        done < "$TMPFILEFORprocessintopage"
+        [ -z "$emptydir" ] && continue || [ -z "$containsindex" ] && processpage "" "$EXPORTDIR/$d"
+    done
+
+    cp -pr "$PUBDIR" "$EXPORTDIR/$PUBDIR"
+    rm "$TMPFILEFORprocessintopage"
+}
+
+[ -z "$TARGETDIR" ] || [ -d "$TARGETDIR" ] || echo "$0: $TARGETDIR: No such file or directory, will check arguments instead"
+[ -z "$PUBDIR"    ] || [ -d "$PUBDIR"    ] || echo "$0: $PUBDIR: No such file or directory, will check arguments instead"
+
+while getopts "t:p:e:f" opt; do
+    case $opt in
+        t) [ -d "$OPTARG" ] && TARGETDIR="$OPTARG" || die 2 "$0: $OPTARG: No such file or directory";;
+        e) [ -n "$OPTARG" ] && EXPORTDIR="$OPTARG";;
+        p) [ -d "$OPTARG" ] && PUBDIR="$OPTARG" || die 2 "$0: $OPTARG: No such file or directory";;
+        f) OVERWRITEEXPORT='true' ;;
+        ?) printf "\
+usage: wesh [-t DIR] [-e DIR] [-p DIR] [-f]
+\t-t DIR\t\t\tDirectory to process. \$TARGETDIR in script
+\t-e DIR\t\t\tWhere to export processed directory. \$EXPORTDIR in script
+\t-p DIR\t\t\tDirectory containing exported page styling such as stylesheets. \$PUBDIR in script
+\t-f \t\t\tIf export directory already exists, overwrite it. \$OVERWRITEEXPORT in script
+" ; exit 1;;
+    esac
+done
+
+echo $EXPORTDIR
+
+[ -n "$TARGETDIR" ] && [ -n "$PUBDIR" ] || die 1 "Please specify all directories for \$TARGETDIR and \$PUBDIR by either configuring variables in $(pwd)/$0 file or providing arguments such directories"
+[ -z "$EXPORTDIR" ] && EXPORTDIR="site-export-$(date '+%Y-%m-%d-%H-%M-%S')"
+
+if [ -d "$EXPORTDIR" ]; then 
+    if [ "$OVERWRITEEXPORT" = 'true' ]; then 
+        rm -r "$EXPORTDIR"
+    else
+        echo "'$EXPORTDIR' already exists and might contain data, -f argument might be used to wipe destination directory. Stop"
+        exit 1
+    fi
+fi
+
+processsite
