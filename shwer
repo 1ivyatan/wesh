@@ -41,7 +41,7 @@ extname() {
     printf "$1" | sed 's/.*\.//'
 }
 
-makerelpath() {
+makepathlevelups() { # look at line 21
     [ "$1" = "/" ] && return
     printf "$1" | sed 's/\//\n/g' | while read i; do
         printf "../"
