@@ -177,8 +177,6 @@ usage: wesh [-t DIR] [-e DIR] [-p DIR] [-f]
     esac
 done
 
-echo $EXPORTDIR
-
 [ -n "$TARGETDIR" ] && [ -n "$PUBDIR" ] || die 1 "Please specify all directories for \$TARGETDIR and \$PUBDIR by either configuring variables in $(pwd)/$0 file or providing arguments such directories"
 [ -z "$EXPORTDIR" ] && EXPORTDIR="site-export-$(date '+%Y-%m-%d-%H-%M-%S')"
 
