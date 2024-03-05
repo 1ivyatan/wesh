@@ -10,7 +10,7 @@ wesh [-t DIR] [-e DIR] [-p DIR] [-f]
 ```
 
 # Description
-Unlike `werc`, `wesh` processes a directory and makes exported directory with static pages ready to be hosted with http servers using shell script, `while` werc uses CGI to process pages for HTTP server software.
+Unlike `werc`, `wesh` processes a directory and makes exported directory with static pages ready to be hosted with http servers using shell script, while `werc` uses CGI to process pages for HTTP server software.
 
 And also with extensions author made after being unsatisfied with what `werc` offers and requires and taking out other things `werc` offers that author does not feel it's necessary for his work. 
 
