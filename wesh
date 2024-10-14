@@ -18,8 +18,7 @@ OVERWRITEEXPORT='false'                                 # Automatically wipe $EX
 INCEMPTYDIRS='true'                                     # In navigation bar, include empty directories but as unclickable items. Might serve useful to some
 INCALLFILES='false'                                      # Include not just processed markup files in navigation bar, but all files in navigaiton bar that are clickable
 INCINDEXINHREF='true'                                   # If the http server in host system for some reason do not automatically open 'index.html' type files, include 'index.html' type in nagivation bar item's leading url
-# RELPATHALLPATHS='true' pain in the ass for me to set this up (relative paths instead absolute in hrefs of <a>), so maybe you a shell scripter implement this yourself or i might do it some time later
-
+# RELPATHALLPATHS='true'    odds of adding this in near future arent high, but never zero
 ## internal script vars ########################################
 indexfile="$INDEXFN.$TARGETMARKUPFILEFORMAT"
 TMPFILEFORprocessintopage='/tmp/wesh'
