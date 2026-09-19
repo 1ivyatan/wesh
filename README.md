@@ -28,5 +28,10 @@ Arguments to options are mantadory.
 * `pub` - Styling and graphics for exported webpages. Required as default stylesheet correctly set visual structure of web pages.
 * `site` - Unprocessed web pages. Required as script converts contents of directories into with webpages along converting markup files into webpages if found such as markdown files. Contains example directory.
 
+# Preview
+<img width="700" alt="preview1" src="https://github.com/user-attachments/assets/45192422-dbbd-467d-bf79-8f8952837499" />
+<img width="700"  alt="preview2" src="https://github.com/user-attachments/assets/8f61e2a5-8431-4751-8781-6b4e61252d64" />
+<img width="700"  alt="preview3" src="https://github.com/user-attachments/assets/d4c37002-1408-47f8-af11-1a83d1b6784d" />
+
 # See also
 * [werc](http://werc.cat-v.org/) - software which `wesh` is inspired from.
