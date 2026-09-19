@@ -2,8 +2,8 @@
 
 # variables
 ## options #####################################################
-TARGETDIR=''                                            # Unprocessed directory
-EXPORTDIR=''                                            # Directory to export processed $TARGETDIR
+TARGETDIR='site'                                        # Unprocessed directory
+EXPORTDIR='export'                                      # Directory to export processed $TARGETDIR
 PUBDIR='pub'                                            # Directory containing stylesheet, favicon... just anything making processed $TARGETDIR look stylish
     PAGESTYLESHEET="$PUBDIR/style/style.css"            # The stylesheet
     PAGEFAVICON="$PUBDIR/favicon.ico"                   # The favicon
@@ -18,7 +18,6 @@ OVERWRITEEXPORT='false'                                 # Automatically wipe $EX
 INCEMPTYDIRS='true'                                     # In navigation bar, include empty directories but as unclickable items. Might serve useful to some
 INCALLFILES='false'                                      # Include not just processed markup files in navigation bar, but all files in navigaiton bar that are clickable
 INCINDEXINHREF='true'                                   # If the http server in host system for some reason do not automatically open 'index.html' type files, include 'index.html' type in nagivation bar item's leading url
-# RELPATHALLPATHS='true'    odds of adding this in near future arent high, but never zero
 ## internal script vars ########################################
 indexfile="$INDEXFN.$TARGETMARKUPFILEFORMAT"
 TMPFILEFORprocessintopage='/tmp/wesh'
@@ -70,7 +69,7 @@ printnav() {
 
         [ -f "$i" ] && [ "$(extname "$iname")" = "$TARGETMARKUPFILEFORMAT" ] && newiname="$(printf "$iname" | sed "s/\.$TARGETMARKUPFILEFORMAT/\.html/")" || newiname=
 
-        [ -d "$i" ] && [ -z "$isempty" ] || href="/$(printf "$i" | sed "s/$(escapeslashes "$TARGETDIR")//$([ -n "$newiname" ] && printf ";s/$iname/$newiname/")")$([ -d "$i" ] && [ "$INCINDEXINHREF" = 'true' ] && printf "/$INDEXFN.html")"
+        [ -d "$i" ] && [ -z "$isempty" ] || href="$(printf "$i" | sed "s/$(escapeslashes "$TARGETDIR")//$([ -n "$newiname" ] && printf ";s/$iname/$newiname/")")$([ -d "$i" ] && [ "$INCINDEXINHREF" = 'true' ] && printf "/$INDEXFN.html")"
 
         if [ "$iname" = "$parentdirofdollar2" ]; then
             echo "<li class=\"listhighlight$([ -d "$i" ] && printf ' listdir')\"><a href=\"$href\">$(printf "$iname" | sed "s/\.$TARGETMARKUPFILEFORMAT//")</a></li>"
